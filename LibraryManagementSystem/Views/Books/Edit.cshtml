@@ -1,0 +1,27 @@
+﻿@model LibraryManagement.Models.Book
+@{
+    Layout = "_Layout";
+}
+<h2>Edit Book</h2>
+
+<form asp-action="Edit" method="post">
+    <input type="hidden" asp-for="Id" />
+    <div class="mb-3">
+        <label class="form-label">Title</label>
+        <input asp-for="Title" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Author</label>
+        <input asp-for="Author" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">ISBN</label>
+        <input asp-for="Isbn" class="form-control" />
+    </div>
+    <div class="mb-3 form-check">
+        <input asp-for="IsBorrowed" class="form-check-input" />
+        <label class="form-check-label">Is Borrowed</label>
+    </div>
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>

@@ -1,0 +1,25 @@
+﻿@model IEnumerable<LibraryManagement.Models.Member>
+@{
+    Layout = "_Layout";
+}
+<h2>Members</h2>
+<p><a class="btn btn-sm btn-primary" asp-action="Create">Add Member</a></p>
+
+<table class="table table-striped">
+    <thead><tr><th>Name</th><th>Email</th><th>Borrowed Count</th><th>Actions</th></tr></thead>
+    <tbody>
+        @foreach (var m in Model)
+        {
+            <tr>
+                <td>@m.FullName</td>
+                <td>@m.Email</td>
+                <td>@m.BorrowedBookIds.Count</td>
+                <td>
+                    <a class="btn btn-sm btn-info" asp-action="Details" asp-route-id="@m.Id">Details</a>
+                    <a class="btn btn-sm btn-warning" asp-action="Edit" asp-route-id="@m.Id">Edit</a>
+                    <a class="btn btn-sm btn-danger" asp-action="Delete" asp-route-id="@m.Id">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

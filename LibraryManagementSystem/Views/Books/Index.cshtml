@@ -1,0 +1,33 @@
+﻿@model IEnumerable<LibraryManagement.Models.Book>
+@{
+    Layout = "_Layout";
+}
+<h2>Books</h2>
+<p>
+    <!-- Add Book available to everyone -->
+    <a class="btn btn-sm btn-primary" asp-action="Create">Add Book</a>
+    <a class="btn btn-sm btn-secondary" asp-action="Available">Available</a>
+    <a class="btn btn-sm btn-secondary" asp-action="Borrowed">Borrowed</a>
+</p>
+
+<table class="table table-striped">
+    <thead>
+        <tr><th>Title</th><th>Author</th><th>ISBN</th><th>Status</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+        @foreach (var b in Model)
+        {
+            <tr>
+                <td>@b.Title</td>
+                <td>@b.Author</td>
+                <td>@b.Isbn</td>
+                <td>@(b.IsBorrowed ? "Borrowed" : "Available")</td>
+                <td>
+                    <a class="btn btn-sm btn-info" asp-action="Details" asp-route-id="@b.Id">Details</a>
+                    <a class="btn btn-sm btn-warning" asp-action="Edit" asp-route-id="@b.Id">Edit</a>
+                    <a class="btn btn-sm btn-danger" asp-action="Delete" asp-route-id="@b.Id">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

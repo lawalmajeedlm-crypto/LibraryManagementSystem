@@ -1,0 +1,33 @@
+﻿@model IEnumerable<LibraryManagement.Models.TransactionViewModel>
+@{
+    Layout = "_Layout";
+}
+<h2>Transactions</h2>
+<p>
+    <a class="btn btn-sm btn-primary" asp-action="Borrow">Borrow Book</a>
+    <a class="btn btn-sm btn-secondary" asp-action="Active">Active</a>
+</p>
+
+<table class="table table-striped">
+    <thead><tr><th>Book</th><th>Member</th><th>Borrowed At</th><th>Returned At</th><th>Actions</th></tr></thead>
+    <tbody>
+        @foreach (var t in Model)
+        {
+            <tr>
+                <td>@t.BookTitle</td>
+                <td>@t.MemberName</td>
+                <td>@t.BorrowedAt.ToLocalTime()</td>
+                <td>@(t.ReturnedAt?.ToLocalTime().ToString() ?? "-")</td>
+                <td>
+                    @if (!t.IsReturned)
+                    {
+                        <form asp-action="Return" method="post" style="display:inline">
+                            <input type="hidden" name="transactionId" value="@t.Id" />
+                            <button class="btn btn-sm btn-success">Return</button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

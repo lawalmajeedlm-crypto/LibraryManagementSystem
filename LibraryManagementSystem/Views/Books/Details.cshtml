@@ -1,0 +1,18 @@
+﻿@model LibraryManagement.Models.Book
+@{
+    Layout = "_Layout";
+}
+<h2>Book Details</h2>
+
+<dl class="row">
+    <dt class="col-sm-3">Title</dt>
+    <dd class="col-sm-9">@Model.Title</dd>
+    <dt class="col-sm-3">Author</dt>
+    <dd class="col-sm-9">@Model.Author</dd>
+    <dt class="col-sm-3">ISBN</dt>
+    <dd class="col-sm-9">@Model.Isbn</dd>
+    <dt class="col-sm-3">Status</dt>
+    <dd class="col-sm-9">@((Model.IsBorrowed) ? "Borrowed" : "Available")</dd>
+</dl>
+
+<a asp-action="Index" class="btn btn-secondary">Back</a>

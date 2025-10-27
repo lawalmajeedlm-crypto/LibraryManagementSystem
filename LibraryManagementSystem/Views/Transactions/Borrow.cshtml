@@ -1,0 +1,31 @@
+﻿@{
+    Layout = "_Layout";
+    var books = ViewBag.Books as IEnumerable<LibraryManagement.Models.Book>;
+    var members = ViewBag.Members as IEnumerable<LibraryManagement.Models.Member>;
+}
+<h2>Borrow Book</h2>
+
+<form asp-action="Borrow" method="post">
+    <div class="mb-3">
+        <label class="form-label">Book</label>
+        <select name="bookId" class="form-select">
+            @foreach (var b in books)
+            {
+                <option value="@b.Id">@b.Title (@b.Author)</option>
+            }
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Member</label>
+        <select name="memberId" class="form-select">
+            @foreach (var m in members)
+            {
+                <option value="@m.Id">@m.FullName</option>
+            }
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Borrow</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>
