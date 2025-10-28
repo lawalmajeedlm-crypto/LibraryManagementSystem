@@ -2,21 +2,24 @@
 using LibraryManagement.Repositories;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace LibraryManagement.Controllers
 {
     public class AccountController : Controller
     {
         private readonly IMemberRepository _members;
+        private readonly IPasswordHasher<Member> _passwordHasher;
 
-        public AccountController(IMemberRepository members)
+        public AccountController(IMemberRepository members, IPasswordHasher<Member> passwordHasher)
         {
             _members = members;
+            _passwordHasher = passwordHasher;
         }
 
-        [HttpGet]
         public IActionResult Login(string? returnUrl = null)
         {
             ViewBag.ReturnUrl = returnUrl;
@@ -26,41 +29,36 @@ namespace LibraryManagement.Controllers
         [HttpPost]
         public async Task<IActionResult> Login(string email, string password, string? returnUrl = null)
         {
-            ViewBag.ReturnUrl = returnUrl;
-
-            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
-            {
-                ModelState.AddModelError("", "Email and password are required.");
-                return View();
-            }
-
-            // Lookup member (in-memory)
             var member = _members.GetByEmail(email);
-            if (member == null || member.Password != password)
+
+            if (member != null)
             {
-                ModelState.AddModelError("", "Invalid email or password.");
-                return View();
+                var result = _passwordHasher.VerifyHashedPassword(member, member.Password, password);
+
+                if (result == PasswordVerificationResult.Success)
+                {
+                    var claims = new List<Claim>
+                    {
+                        new Claim(ClaimTypes.NameIdentifier, member.Id.ToString()),
+                        new Claim(ClaimTypes.Name, member.FullName),
+                        new Claim(ClaimTypes.Email, member.Email),
+                    };
+
+                    var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                    var authProperties = new AuthenticationProperties();
+
+                    await HttpContext.SignInAsync(
+                        CookieAuthenticationDefaults.AuthenticationScheme,
+                        new ClaimsPrincipal(claimsIdentity),
+                        authProperties);
+
+                    return LocalRedirect(returnUrl ?? "/");
+                }
             }
 
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, member.FullName),
-                new Claim("MemberId", member.Id.ToString()),
-                new Claim(ClaimTypes.Email, member.Email),
-                new Claim(ClaimTypes.Role, "Member")
-            };
-
-            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var principal = new ClaimsPrincipal(identity);
-
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
-
-            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
-            {
-                return Redirect(returnUrl);
-            }
-
-            return RedirectToAction("Index", "Home");
+            ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+            ViewBag.ReturnUrl = returnUrl;
+            return View();
         }
 
         [HttpPost]

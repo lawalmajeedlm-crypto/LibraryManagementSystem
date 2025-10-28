@@ -1,6 +1,13 @@
 ﻿@model LibraryManagement.Models.Book
 @{
     Layout = "_Layout";
+    // determine if current user is logged in and get member id from claims (if present)
+    Guid currentMemberId = Guid.Empty;
+    if (User?.Identity?.IsAuthenticated == true)
+    {
+        var memberClaim = User.Claims.FirstOrDefault(c => c.Type == "MemberId")?.Value;
+        Guid.TryParse(memberClaim, out currentMemberId);
+    }
 }
 <h2>Book Details</h2>
 
@@ -15,4 +22,47 @@
     <dd class="col-sm-9">@((Model.IsBorrowed) ? "Borrowed" : "Available")</dd>
 </dl>
 
-<a asp-action="Index" class="btn btn-secondary">Back</a>
+@if (!Model.IsBorrowed)
+{
+    <div class="mb-3">
+        <h5>Borrow this book</h5>
+        <form asp-controller="Transactions" asp-action="Borrow" method="post" class="row g-3">
+            <input type="hidden" name="bookId" value="@Model.Id" />
+            @if (currentMemberId != Guid.Empty)
+            {
+                <input type="hidden" name="memberId" value="@currentMemberId" />
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Borrow as @User.Identity.Name</button>
+                    <a asp-action="Index" class="btn btn-secondary">Back</a>
+                </div>
+            }
+            else
+            {
+                <div class="col-md-6">
+                    <label class="form-label">Member</label>
+                    <select name="memberId" class="form-select" required>
+                        <option value="">-- select member --</option>
+                        @foreach (var m in ViewBag.AllMembers as IEnumerable<LibraryManagement.Models.Member> ?? Enumerable.Empty<LibraryManagement.Models.Member>())
+                        {
+                            <option value="@m.Id">@m.FullName (@m.Email)</option>
+                        }
+                    </select>
+                    <div class="form-text">Or <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Url.Action("Details", "Books", new { id = Model.Id })">login</a> to borrow with your account.</div>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Borrow</button>
+                    <a asp-action="Index" class="btn btn-secondary">Back</a>
+                </div>
+            }
+        </form>
+    </div>
+}
+else
+{
+    <p class="text-muted">This book is currently borrowed.</p>
+    <a asp-action="Index" class="btn btn-secondary">Back</a>
+}
+
+@section Scripts {
+    <!-- nothing for now -->
+}

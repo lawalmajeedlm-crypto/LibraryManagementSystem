@@ -1,5 +1,6 @@
 ﻿using LibraryManagement.Models;
 using LibraryManagement.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 
@@ -13,25 +14,19 @@ namespace LibraryManagement.Controllers
             _books = books;
         }
 
-        public IActionResult Index()
+        public IActionResult Index() => View(_books.GetAll());
+        public IActionResult Available() => View("Index", _books.GetAvailable());
+        public IActionResult Borrowed() => View("Index", _books.GetBorrowed());
+        public IActionResult Details(Guid id)
         {
-            var model = _books.GetAll();
-            return View(model);
+            var b = _books.GetById(id);
+            return b == null ? NotFound() : View(b);
         }
 
-        public IActionResult Available()
-        {
-            return View("Index", _books.GetAvailable());
-        }
-
-        public IActionResult Borrowed()
-        {
-            return View("Index", _books.GetBorrowed());
-        }
-
-        // Create is now available to everyone (anonymous or authenticated)
+        [Authorize] // Only logged-in members can add books
         public IActionResult Create() => View(new Book());
 
+        [Authorize]
         [HttpPost]
         public IActionResult Create(Book book)
         {
@@ -40,13 +35,14 @@ namespace LibraryManagement.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [Authorize] // Requires login to edit/delete
         public IActionResult Edit(Guid id)
         {
             var b = _books.GetById(id);
-            if (b == null) return NotFound();
-            return View(b);
+            return b == null ? NotFound() : View(b);
         }
 
+        [Authorize]
         [HttpPost]
         public IActionResult Edit(Book book)
         {
@@ -55,17 +51,11 @@ namespace LibraryManagement.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [Authorize]
         public IActionResult Delete(Guid id)
         {
             _books.Delete(id);
             return RedirectToAction(nameof(Index));
-        }
-
-        public IActionResult Details(Guid id)
-        {
-            var b = _books.GetById(id);
-            if (b == null) return NotFound();
-            return View(b);
         }
     }
 }

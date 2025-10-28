@@ -1,13 +1,19 @@
 ﻿@model IEnumerable<LibraryManagement.Models.Book>
 @{
-    Layout = "_Layout";
+    ViewData["Title"] = "Books";
 }
 <h2>Books</h2>
 <p>
-    <!-- Add Book available to everyone -->
-    <a class="btn btn-sm btn-primary" asp-action="Create">Add Book</a>
-    <a class="btn btn-sm btn-secondary" asp-action="Available">Available</a>
-    <a class="btn btn-sm btn-secondary" asp-action="Borrowed">Borrowed</a>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <a asp-action="Create" class="btn btn-primary">Add Book</a>
+    }
+    else
+    {
+        <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Url.Action("Create", "Books")" class="btn btn-outline-secondary">Login to Add Book</a>
+    }
+    <a asp-action="Available" class="btn btn-info">Available</a>
+    <a asp-action="Borrowed" class="btn btn-warning">Borrowed</a>
 </p>
 
 <table class="table table-striped">
@@ -21,11 +27,15 @@
                 <td>@b.Title</td>
                 <td>@b.Author</td>
                 <td>@b.Isbn</td>
-                <td>@(b.IsBorrowed ? "Borrowed" : "Available")</td>
                 <td>
-                    <a class="btn btn-sm btn-info" asp-action="Details" asp-route-id="@b.Id">Details</a>
-                    <a class="btn btn-sm btn-warning" asp-action="Edit" asp-route-id="@b.Id">Edit</a>
-                    <a class="btn btn-sm btn-danger" asp-action="Delete" asp-route-id="@b.Id">Delete</a>
+                    <span class="badge bg-@(b.IsBorrowed ? "warning" : "success")">@(b.IsBorrowed ? "Borrowed" : "Available")</span>
+                </td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@b.Id">Details</a>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <span> | <a asp-action="Edit" asp-route-id="@b.Id">Edit</a> | <a asp-action="Delete" asp-route-id="@b.Id">Delete</a></span>
+                    }
                 </td>
             </tr>
         }

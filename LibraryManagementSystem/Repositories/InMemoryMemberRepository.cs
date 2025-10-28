@@ -1,4 +1,5 @@
 ﻿using LibraryManagement.Models;
+using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,42 +9,34 @@ namespace LibraryManagement.Repositories
     public class InMemoryMemberRepository : IMemberRepository
     {
         private readonly List<Member> _members = new();
+        private readonly IPasswordHasher<Member> _passwordHasher;
 
-        public InMemoryMemberRepository()
+        public InMemoryMemberRepository(IPasswordHasher<Member> passwordHasher)
         {
-            // NOTE: passwords are plain-text for this demo (in-memory). Use hashed passwords in real apps.
-            _members.AddRange(new[]
-            {
-                new Member { FullName = "Alice Johnson", Email = "alice@example.com", Password = "password123" },
-                new Member { FullName = "Bob Smith", Email = "bob@example.com", Password = "password123" }
-            });
+            _passwordHasher = passwordHasher;
+
+            // Seed sample data with HASHED passwords
+            var alice = new Member { FullName = "Alice Johnson", Email = "alice@example.com" };
+            alice.Password = _passwordHasher.HashPassword(alice, "password123");
+
+            var bob = new Member { FullName = "Bob Smith", Email = "bob@example.com" };
+            bob.Password = _passwordHasher.HashPassword(bob, "password123");
+
+            _members.AddRange(new[] { alice, bob });
         }
 
         public void Add(Member item) => _members.Add(item);
-
         public void Delete(Guid id) => _members.RemoveAll(m => m.Id == id);
-
         public IEnumerable<Member> GetAll() => _members;
-
         public Member? GetById(Guid id) => _members.FirstOrDefault(m => m.Id == id);
 
-        public Member? GetByEmail(string email) => _members.FirstOrDefault(m => string.Equals(m.Email, email, StringComparison.OrdinalIgnoreCase));
+        // NEW: Get member by email for login
+        public Member? GetByEmail(string email) => _members.FirstOrDefault(m => m.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
 
         public void Update(Member item)
         {
             var idx = _members.FindIndex(m => m.Id == item.Id);
             if (idx >= 0) _members[idx] = item;
-        }
-    }
-
-    // Extend the interface locally so we can lookup by email easily (in-memory only).
-    public static class InMemoryMemberRepositoryExtensions
-    {
-        public static Member? GetByEmail(this IMemberRepository repo, string email)
-        {
-            if (repo is InMemoryMemberRepository r) return r.GetByEmail(email);
-            // Fallback: enumerate
-            return repo.GetAll().FirstOrDefault(m => string.Equals(m.Email, email, StringComparison.OrdinalIgnoreCase));
         }
     }
 }

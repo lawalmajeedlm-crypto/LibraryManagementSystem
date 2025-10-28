@@ -2,9 +2,9 @@
 using LibraryManagement.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System;
-using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -14,17 +14,16 @@ namespace LibraryManagement.Controllers
     {
         private readonly IMemberService _members;
         private readonly ITransactionService _transactions;
+        private readonly IPasswordHasher<Member> _passwordHasher;
 
-        public MembersController(IMemberService members, ITransactionService transactions)
+        public MembersController(IMemberService members, ITransactionService transactions, IPasswordHasher<Member> passwordHasher)
         {
             _members = members;
             _transactions = transactions;
+            _passwordHasher = passwordHasher;
         }
 
-        public IActionResult Index()
-        {
-            return View(_members.GetAll());
-        }
+        public IActionResult Index() => View(_members.GetAll());
 
         public IActionResult Details(Guid id)
         {
@@ -35,42 +34,42 @@ namespace LibraryManagement.Controllers
             return View(m);
         }
 
-        public IActionResult Create() => View(new Member());
+        public IActionResult Create() => View(new Member()); // This is the Registration page
 
         [HttpPost]
         public async Task<IActionResult> Create(Member member)
         {
-            if (!ModelState.IsValid) return View(member);
-
-            // Basic server-side validation for password (demo)
-            if (string.IsNullOrWhiteSpace(member.Password))
+            if (!ModelState.IsValid || string.IsNullOrEmpty(member.Password))
             {
-                ModelState.AddModelError(nameof(member.Password), "Password is required.");
+                ModelState.AddModelError("Password", "Password is required.");
                 return View(member);
             }
 
+            // Hash the password before saving
+            member.Password = _passwordHasher.HashPassword(member, member.Password);
+
             _members.Create(member);
 
-            // Auto sign-in after registration (convenience for demo)
+            // Auto sign-in after registration
             var claims = new List<Claim>
             {
+                new Claim(ClaimTypes.NameIdentifier, member.Id.ToString()),
                 new Claim(ClaimTypes.Name, member.FullName),
-                new Claim("MemberId", member.Id.ToString()),
                 new Claim(ClaimTypes.Email, member.Email),
-                new Claim(ClaimTypes.Role, "Member")
             };
 
-            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var principal = new ClaimsPrincipal(identity);
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
 
             return RedirectToAction(nameof(Index));
         }
 
+        // Edit, Delete actions require authorization but we keep them open for librarians (simplicity)
         public IActionResult Edit(Guid id)
         {
             var m = _members.GetById(id);
             if (m == null) return NotFound();
+            m.Password = string.Empty; // Don't expose hash
             return View(m);
         }
 
@@ -78,7 +77,20 @@ namespace LibraryManagement.Controllers
         public IActionResult Edit(Member member)
         {
             if (!ModelState.IsValid) return View(member);
-            _members.Update(member);
+
+            var existingMember = _members.GetById(member.Id);
+            if (existingMember == null) return NotFound();
+
+            existingMember.FullName = member.FullName;
+            existingMember.Email = member.Email;
+
+            // Only update the password hash if a new password was entered
+            if (!string.IsNullOrEmpty(member.Password))
+            {
+                existingMember.Password = _passwordHasher.HashPassword(existingMember, member.Password);
+            }
+
+            _members.Update(existingMember);
             return RedirectToAction(nameof(Index));
         }
 
