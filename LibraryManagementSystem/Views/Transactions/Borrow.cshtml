@@ -2,13 +2,16 @@
     Layout = "_Layout";
     var books = ViewBag.Books as IEnumerable<LibraryManagement.Models.Book>;
     var members = ViewBag.Members as IEnumerable<LibraryManagement.Models.Member>;
+    var currentMemberId = (ViewBag.CurrentMemberId == null) ? Guid.Empty : (Guid)ViewBag.CurrentMemberId;
+    var currentMemberName = (string?)ViewBag.CurrentMemberName ?? "";
 }
 <h2>Borrow Book</h2>
 
-<form asp-action="Borrow" method="post">
-    <div class="mb-3">
+<form asp-action="Borrow" method="post" class="row g-3">
+    <div class="col-md-6">
         <label class="form-label">Book</label>
-        <select name="bookId" class="form-select">
+        <select name="bookId" class="form-select" required>
+            <option value="">-- select book --</option>
             @foreach (var b in books)
             {
                 <option value="@b.Id">@b.Title (@b.Author)</option>
@@ -16,16 +19,31 @@
         </select>
     </div>
 
-    <div class="mb-3">
+    <div class="col-md-6">
         <label class="form-label">Member</label>
-        <select name="memberId" class="form-select">
-            @foreach (var m in members)
-            {
-                <option value="@m.Id">@m.FullName</option>
-            }
-        </select>
+        @if (currentMemberId != Guid.Empty)
+        {
+            <div class="input-group">
+                <input type="hidden" name="memberId" value="@currentMemberId" />
+                <input class="form-control" readonly value="@currentMemberName" />
+                <a class="btn btn-outline-secondary" asp-controller="Members" asp-action="Details" asp-route-id="@currentMemberId">My Profile</a>
+            </div>
+        }
+        else
+        {
+            <select name="memberId" class="form-select" required>
+                <option value="">-- select member --</option>
+                @foreach (var m in members)
+                {
+                    <option value="@m.Id">@m.FullName (@m.Email)</option>
+                }
+            </select>
+            <div class="form-text">Or <a asp-controller="Account" asp-action="Login">login</a> to use your account.</div>
+        }
     </div>
 
-    <button type="submit" class="btn btn-primary">Borrow</button>
-    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary">Borrow</button>
+        <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+    </div>
 </form>

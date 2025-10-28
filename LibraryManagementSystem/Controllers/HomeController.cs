@@ -8,5 +8,11 @@ namespace LibraryManagement.Controllers
         {
             return View();
         }
+
+        // Simple view for unauthorized access
+        public IActionResult AccessDenied()
+        {
+            return View();
+        }
     }
 }

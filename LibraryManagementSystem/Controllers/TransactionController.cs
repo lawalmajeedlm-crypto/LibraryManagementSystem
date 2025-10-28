@@ -1,12 +1,11 @@
-﻿using LibraryManagement.Models;
-using LibraryManagement.Services;
+﻿using LibraryManagement.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using Microsoft.AspNetCore.Authorization;
 
 namespace LibraryManagement.Controllers
 {
+    [Authorize] // Transactions require login
     public class TransactionsController : Controller
     {
         private readonly ITransactionService _transactions;
@@ -20,19 +19,8 @@ namespace LibraryManagement.Controllers
             _members = members;
         }
 
-        public IActionResult Index()
-        {
-            var tx = _transactions.GetAll();
-            var vm = BuildVm(tx);
-            return View(vm);
-        }
-
-        public IActionResult Active()
-        {
-            var tx = _transactions.GetActive();
-            var vm = BuildVm(tx);
-            return View("Index", vm);
-        }
+        public IActionResult Index() => View(_transactions.GetAll());
+        public IActionResult Active() => View("Index", _transactions.GetActive());
 
         public IActionResult Borrow()
         {
@@ -58,24 +46,6 @@ namespace LibraryManagement.Controllers
             var ok = _transactions.ReturnBook(transactionId);
             if (!ok) TempData["Error"] = "Return failed (maybe already returned).";
             return RedirectToAction(nameof(Index));
-        }
-
-        // helper to map transaction records to view models with related data
-        private IEnumerable<TransactionViewModel> BuildVm(IEnumerable<TransactionRecord> txs)
-        {
-            var books = _books.GetAll().ToDictionary(b => b.Id, b => b);
-            var members = _members.GetAll().ToDictionary(m => m.Id, m => m);
-
-            return txs.Select(t => new TransactionViewModel
-            {
-                Id = t.Id,
-                BookId = t.BookId,
-                BookTitle = books.TryGetValue(t.BookId, out var b) ? b.Title : "(deleted)",
-                MemberId = t.MemberId,
-                MemberName = members.TryGetValue(t.MemberId, out var m) ? m.FullName : "(deleted)",
-                BorrowedAt = t.BorrowedAt,
-                ReturnedAt = t.ReturnedAt
-            }).OrderByDescending(v => v.BorrowedAt);
         }
     }
 }

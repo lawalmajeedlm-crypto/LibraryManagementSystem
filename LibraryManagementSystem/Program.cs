@@ -1,36 +1,41 @@
+using LibraryManagement.Models; 
 using LibraryManagement.Repositories;
 using LibraryManagement.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Identity; 
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddControllersWithViews();
 
-// Authentication: cookie-based (in-memory user store)
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
-        options.LoginPath = "/Account/Login";
-        options.AccessDeniedPath = "/Account/Login";
-    });
 
-// Register in-memory repositories as singletons so data persists in app lifetime.
+builder.Services.AddSingleton<IPasswordHasher<Member>, PasswordHasher<Member>>(); 
+
+
 builder.Services.AddSingleton<IBookRepository, InMemoryBookRepository>();
 builder.Services.AddSingleton<IMemberRepository, InMemoryMemberRepository>();
 builder.Services.AddSingleton<ITransactionRepository, InMemoryTransactionRepository>();
 
-// Register services (business logic)
+
 builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddScoped<IMemberService, MemberService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 
+
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Account/Login";
+        options.LogoutPath = "/Account/Logout";
+        options.AccessDeniedPath = "/Home/AccessDenied";
+    });
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -39,7 +44,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-app.UseAuthentication();
+app.UseAuthentication(); 
 app.UseAuthorization();
 
 app.MapControllerRoute(

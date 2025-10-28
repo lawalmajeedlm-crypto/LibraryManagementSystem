@@ -1,6 +1,6 @@
 ﻿using LibraryManagement.Models;
 using System;
-using System.Collections.Generic;
+using System.Collections.Generic; // REQUIRED for IEnumerable<T>
 
 namespace LibraryManagement.Services
 {
